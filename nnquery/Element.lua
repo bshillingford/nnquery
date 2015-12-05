@@ -99,4 +99,34 @@ function Element:preceding_siblings()
 end
 Element:final('preceding_siblings')
 
+--[[
+Returns an `ElementList` of all descendants.
+]]
+function Element:descendants()
+  local descs = {}
+  self:dfs(function(el) table.insert(descs, el) end)
+  return EL.fromtable(descs)
+end
+
+--[[
+Recurses down the DAG below this `Element` in DFS order, calling the callback 
+at each `Element`. Note that DFS order is not unique, both due to ordering of
+children and the structure being a DAG rather than a tree.
+]]
+function Element:dfs(func_visit)
+  local visited_table = {}
+  local function traverse(el)
+    for child in el:children() do
+      if not visited_table[el] then
+        traverse(func)
+        func_visit(el)
+        visited_table[el] = true
+      end
+    end
+  end
+  traverse(self)
+end
+
+-- TODO: get a queue and implement BFS
+
 return Element

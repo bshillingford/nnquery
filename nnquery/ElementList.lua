@@ -183,7 +183,7 @@ With the given predicate, produces an EL with only the elements
 ***before*** (***exclusively***) the first time 'pred' returns true.
 The predicate will not longer be calle the first time it returns true.
 
-Predicate has the same form as `:where()`.
+Predicate has the same form as in `:where()`.
 ]]
 function EL:before(pred)
   local true_yet = false
@@ -269,6 +269,40 @@ function EL:where(pred, no_table)
     end
     return EL.fromtable(results)
   end
+end
+
+--[[
+Given a table mapping `Element` property names to values, returns only the
+elements where ***all*** properties equal (using `==`) the provided values.
+]]
+function EL:equal_all(conds)
+  if type(conds) ~= 'table' then
+    error('conds must be a table of properties to check')
+  end
+  return self:where(function(el)
+    local all_true = true
+    for k, v in pairs(conds) do
+      all_true = all_true and (el[k] == v)
+    end
+    return all_true
+  end)
+end
+
+--[[
+Same as `:equal_all()` except ***any*** property must match rather than all.
+]]
+function EL:equal_any(conds)
+  if type(conds) ~= 'table' then
+    error('conds must be a table of properties to check')
+  end
+  return self:where(function(el)
+    for k, v in pairs(conds) do
+      if el[k] == v then
+        return true
+      end
+    end
+    return false
+  end)
 end
 
 return EL
