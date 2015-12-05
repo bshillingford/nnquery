@@ -6,9 +6,7 @@ and aggregation operations on them.
 
 Most functions either return a single `Element`, a new `ElementList`, or a number (for `:count()`).
 
-TODO: lightweight hierarchy (via classic) for exceptions, instead of string errors.
-
-### Boring useless details:
+### Boring details and implementation decisions:
 Makes the assumption that traversing an iterator is cheap, so we sometimes perform multiple 
 passes. This allows future use for large data structures. Some small results are cached, but 
 most things are constructed on demand, and some large things are not cached as performance
@@ -98,7 +96,7 @@ end
 
 --[[
 Return a subsequence as an `ElementList`, using the index range given, where
-both `from` and `to` are inclusive; `to` may be `nil` to indicate slicing to the end,
+both `from` and `to` are ***inclusive***; `to` may be `nil` to indicate slicing to the end,
 and both indices can be negative with the same semantics as `nth`.
 ]]
 function EL:slice(from, to)
@@ -125,7 +123,7 @@ function EL:slice(from, to)
   local results = {}
   local i = 1
   for e in self:iter() do
-    if to ~= nil and i >= to then
+    if to ~= nil and i > to then
       break
     end
     if i >= from then
@@ -151,6 +149,65 @@ function EL:count()
 end
 
 --[[
+With the given predicate, produces an EL with only the elements 
+***after*** (***exclusively*** unless `incl` is `true`) the 
+first time `pred` returns true. The predicate will not longer 
+be calle the first time it returns true.
+
+Predicate has the same form as `:where()`.
+]]
+function EL:after(pred, incl)
+  local true_yet = false
+  return self:where(function(...)
+    if not true_yet and pred(...) then
+      true_yet = true
+      if incl then
+        return true
+      else
+        return false
+      end
+    end
+    return true_yet
+  end, true)  -- doesn't construct intermediate table
+end
+
+--[[
+Similar to `after`, except inclusive.
+]]
+function EL:iafter(pred)
+  return self:after(pred, true)
+end
+
+--[[
+With the given predicate, produces an EL with only the elements 
+***before*** (***exclusively***) the first time 'pred' returns true.
+The predicate will not longer be calle the first time it returns true.
+
+Predicate has the same form as `:where()`.
+]]
+function EL:before(pred)
+  local true_yet = false
+  return self:where(function(...)
+    if not true_yet and pred(...) then
+      true_yet = true
+      if incl then
+        return false
+      else
+        return true
+      end
+    end
+    return not true_yet
+  end, true)  -- doesn't construct intermediate table
+end
+
+--[[
+Similar to `before`, except inclusive.
+]]
+function EL:ibefore(pred)
+  return self:before(pred, true)
+end
+
+--[[
 Returns a table of the `Element`s.
 
 Tables are not cached, so the table can be safely modified and not affect subsequent calls.
@@ -168,24 +225,50 @@ Filters by the given predicate function: each `Element` in the `ElementList`
 is passed to the sequence and must be return true iff it is meant to kept.
 Returns a new `ElementList`.
 
+If `no_table` is true, doesn't construct a table. This is ideal for when the result of
+the `:where()` will only be used once or chained. Used frequently to implement the
+other filters.
+
 The function is passed two args: the `Element`, and its index into the `ElementList`.
 The index argument needn't be given for lua functions, which ignore extra args.
 ]]
-function EL:where(pred)
+function EL:where(pred, no_table)
   if type(pred) ~= 'function' then
     error('expected function as argument to :where()')
   end
 
-  -- Here, we don't construct on the fly, in case pred() is rarely or never true, in which
-  -- case caching is a better idea.
-  local results = {}
-  local i = 1
-  for e in self:iter() do
-    i = i + 1
-    if pred(f, i) then
-      table.insert(results, e)
+  if no_table then
+    return EL(function()
+      local pos = 0
+      local iter = self:iter()
+      return function()
+        local el
+        local found = false
+        -- fetch the next matching element, if any
+        repeat
+          pos = pos + 1
+          el = iter()
+          found = pred(el, pos)
+        until found
+        -- if none, returns nil (stop iteration)
+        if found then
+          return el
+        end
+      end
+    end)
+  else
+    -- Here, we don't construct on the fly, in case pred() is rarely or never true, in which
+    -- case caching is a better idea.
+    local results = {}
+    local i = 1
+    for e in self:iter() do
+      i = i + 1
+      if pred(f, i) then
+        table.insert(results, e)
+      end
     end
+    return EL.fromtable(results)
   end
-  return EL.fromtable(results)
 end
 
+return EL

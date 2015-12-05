@@ -1,22 +1,45 @@
 local classic = require 'classic'
 
---[[
-Abstract base class for all elements. Provides an interface for search and 
-querying, though their implementations are elsewhere.
+local EL = require 'nnquery.ElementList'
 
-Note a few design differences from languages such as XPath.
+--[[
+Abstract base class for all elements.
+Provides an interface and various common functionality for search and querying.
+
+Note a few design differences from languages such as XPath and CSS queries.
 
   1. Modules are best described as a DAG rather than a tree. Hence, there can the multiple 
      parents (i.e. inputs) rather than just one.
   2. Since the API is OOP rather than XPath or the CSS query selection language, operations
      such as `//SomeTag[position() mod 2 = 0]` are implemented as calls to an `ElementList`.
+  3. There is no true "root" node, unlike an XML/HTML document; the root is simply the place
+     where the query begins. Therefore, one cannot search for the root's parents.
 
-The API is inspired by a mix of XPath and .NET's LINQ.
+The API is inspired in part by XPath and .NET's LINQ.
 ]]
 local Element = classic.class(...)
 
-function Element:_init()
+--[[
+***ctor only to be called by child classes***
+
+`val` specifies the contents of this element; likely an nn module.
+]]
+function Element:_init(val)
+  assert(val, 'val must be given')
+  self._val = val
 end
+
+--[[
+Returns the object that this `Element` wraps.
+]]
+function Element:val()
+  return self._val
+end
+
+--[[
+Returns true if the `Element` instances refer to the same element.
+]]
+Element:mustHave('equals')
 
 --[[
 Returns an `ElementList` for children of this element.
@@ -33,16 +56,47 @@ an nngraph node. The precise definition of "parent" is implementation-dependent.
 Pure virtual method; must be implemented by the concrete `Element`.
 ]]
 Element:mustHave('parents')
+-- TODO: Think about how to best implement this function for non-nngraph stuff.
+--       For nngraph, simply need to store parents as extracted from graph, and always
+--       keep track of which gmodule it came from.
+--
+--       For standard nn modules... ditto I guess?
+--
 
 --[[
 Returns an `ElementList` for following siblings of this element.
+
+Raises an error if this element has multiple parents.
 ]]
--- TODO
+function Element:following_siblings()
+  local parents = self:parents():totable()
+  if #parents ~= 1 then
+    error('finds siblings only for elements with precisely one parent')
+  end
+  local all_siblings = parents[1]:children()
+  -- after is exclusive, which is what we want
+  return all_siblings:after(function(el)
+    return el:equals(self)
+  end)
+end
+Element:final('following_siblings')
 
 --[[
 Returns an `ElementList` for preceding siblings of this element, where
 the first sibling is the one immediately preceding this element and subsequent
 siblings are further away.
 ]]
--- TODO
+function Element:preceding_siblings()
+  local parents = self:parents():totable()
+  if #parents ~= 1 then
+    error('finds siblings only for elements with precisely one parent')
+  end
+  local all_siblings = parents[1]:children()
+  -- before is exclusive, which is what we want
+  return all_siblings:before(function(el)
+    return el:equals(self)
+  end)
+end
+Element:final('preceding_siblings')
 
+return Element
