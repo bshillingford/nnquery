@@ -47,6 +47,15 @@ function EL.static.fromtable(elements)
 end
 
 --[[
+Factory for constructing an empty `ElementList`.
+]]
+function EL.static.create_empty()
+  return EL(function()
+    return function() return nil end
+  end)
+end
+
+--[[
 Returns a new iterator over elements of this sequence.
 ]]
 function EL:iter()
@@ -131,7 +140,7 @@ function EL:slice(from, to)
     end
     i = i + 1
   end
-  return ET.fromtable(results)
+  return EL.fromtable(results)
 end
 
 --[[
@@ -274,30 +283,45 @@ end
 --[[
 Given a table mapping `Element` property names to values, returns only the
 elements where ***all*** properties equal (using `==`) the provided values.
+
+Each property can be a simple instance variable or a getter method that takes
+no arguments.
 ]]
-function EL:equal_all(conds)
-  if type(conds) ~= 'table' then
-    error('conds must be a table of properties to check')
+function EL:props(props)
+  if type(props) ~= 'table' then
+    error('props must be a table of properties to check')
   end
   return self:where(function(el)
     local all_true = true
-    for k, v in pairs(conds) do
-      all_true = all_true and (el[k] == v)
+    for k, v in pairs(props) do
+      local prop_val 
+      if type(el[k]) == 'function' then
+        prop_val = el[k](el)  -- getter method needs implicit self
+      else
+        prop_val = el[k]
+      end
+      all_true = all_true and (prop_val == v)
     end
     return all_true
   end)
 end
 
 --[[
-Same as `:equal_all()` except ***any*** property must match rather than all.
+Same as `:props()` except ***any*** property must match rather than all.
 ]]
-function EL:equal_any(conds)
-  if type(conds) ~= 'table' then
-    error('conds must be a table of properties to check')
+function EL:props_any(props)
+  if type(props) ~= 'table' then
+    error('props must be a table of properties to check')
   end
   return self:where(function(el)
-    for k, v in pairs(conds) do
-      if el[k] == v then
+    for k, v in pairs(props) do
+      local prop_val 
+      if type(el[k]) == 'function' then
+        prop_val = el[k](el)  -- getter method needs implicit self
+      else
+        prop_val = el[k]
+      end
+      if prop_val == v then
         return true
       end
     end

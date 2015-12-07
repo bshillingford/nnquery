@@ -1,31 +1,35 @@
 local classic = require 'classic'
 
-local EL = require 'nnquery.ElementList'
+local ElementList = require 'nnquery.ElementList'
+local Context = require 'nnquery.Context'
 
 --[[
 Abstract base class for all elements.
 Provides an interface and various common functionality for search and querying.
 
-Note a few design differences from languages such as XPath and CSS queries.
+Note a few notable design features and/or differences from XPath and CSS queries.
 
   1. Modules are best described as a DAG rather than a tree. Hence, there can the multiple 
      parents (i.e. inputs) rather than just one.
   2. Since the API is OOP rather than XPath or the CSS query selection language, operations
      such as `//SomeTag[position() mod 2 = 0]` are implemented as calls to an `ElementList`.
   3. There is no true "root" node, unlike an XML/HTML document; the root is simply the place
-     where the query begins. Therefore, one cannot search for the root's parents.
+     where the query begins. Therefore, one cannot search for the root's parents, even if
+     the root module is contained in another context.
 
 The API is inspired in part by XPath and .NET's LINQ.
 ]]
 local Element = classic.class(...)
 
 --[[
-***ctor only to be called by child classes***
-
-`val` specifies the contents of this element; likely an nn module.
+Constructor called by the execution context. Can be overridden.
+Argument `ctx` is a `Context` instance, and `val` specifies the 
+contents of this element; usually an nn module.
 ]]
-function Element:_init(val)
+function Element:_init(ctx, val)
+  assert(ctx and ctx:classIs(Context), 'a Context ctx must be given')
   assert(val, 'val must be given')
+  self._ctx = ctx
   self._val = val
 end
 
@@ -38,8 +42,12 @@ end
 
 --[[
 Returns true if the `Element` instances refer to the same element.
+
+Defaults to comparing (by reference) `val` property, but can be overridden.
 ]]
-Element:mustHave('equals')
+function Element:equals(other)
+  return self._val == other._val
+end
 
 --[[
 Returns an `ElementList` for children of this element.
@@ -56,12 +64,6 @@ an nngraph node. The precise definition of "parent" is implementation-dependent.
 Pure virtual method; must be implemented by the concrete `Element`.
 ]]
 Element:mustHave('parents')
--- TODO: Think about how to best implement this function for non-nngraph stuff.
---       For nngraph, simply need to store parents as extracted from graph, and always
---       keep track of which gmodule it came from.
---
---       For standard nn modules... ditto I guess?
---
 
 --[[
 Returns an `ElementList` for following siblings of this element.
@@ -105,7 +107,7 @@ Returns an `ElementList` of all descendants.
 function Element:descendants()
   local descs = {}
   self:dfs(function(el) table.insert(descs, el) end)
-  return EL.fromtable(descs)
+  return ElementList.fromtable(descs)
 end
 
 --[[
