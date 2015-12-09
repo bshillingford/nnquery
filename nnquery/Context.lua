@@ -6,7 +6,7 @@ given the registry.
 
 local classic = require 'classic'
 
-local Element = require 'nnquery.Element'
+local nnquery = require 'nnquery'
 
 local Context = classic.class(...)
 
@@ -23,7 +23,7 @@ function Context:reg(cls, check_match)
   if type(check_match) ~= 'function' then
     error('Match-checking predicate must be a function')
   end
-  if not cls:isSubclassOf(Element) then
+  if not cls:isSubclassOf(nnquery.Element) then
     error('Can only register Element subclasses')
   end
   table.insert(self._reg, {cls=cls, check_match=check_match})
@@ -35,7 +35,7 @@ Registers a default `Element` implementation in case no registered handlers matc
 If not specified, `:wrap()` will raise an error.
 ]]
 function Context:default(elem_class)
-  if not elem_class:isSubclassOf(Element) then
+  if not elem_class:isSubclassOf(nnquery.Element) then
     error('Can only register Element subclasses')
   end
   self._default_cls = elem_class
@@ -68,6 +68,7 @@ function Context:wrap(val)
       error('No handlers matched, and no default class provided')
     end
   end
+  return wrapped
 end
 
 --[[
@@ -83,6 +84,8 @@ end
 
 --[[
 Convenient alias for `:wrap()`.
+Intended to be used by the user, not by internal code for the sake
+of cleanliness.
 ]]
 function Context:__call(val)
   return self:wrap(val)

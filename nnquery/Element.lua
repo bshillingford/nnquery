@@ -1,7 +1,6 @@
 local classic = require 'classic'
 
-local ElementList = require 'nnquery.ElementList'
-local Context = require 'nnquery.Context'
+local nnquery = require 'nnquery'
 
 --[[
 Abstract base class for all elements.
@@ -27,7 +26,7 @@ Argument `ctx` is a `Context` instance, and `val` specifies the
 contents of this element; usually an nn module.
 ]]
 function Element:_init(ctx, val)
-  assert(ctx and ctx:classIs(Context), 'a Context ctx must be given')
+  assert(ctx and ctx:classIs(nnquery.Context), 'a Context ctx must be given')
   assert(val, 'val must be given')
   self._ctx = ctx
   self._val = val
@@ -107,7 +106,7 @@ Returns an `ElementList` of all descendants.
 function Element:descendants()
   local descs = {}
   self:dfs(function(el) table.insert(descs, el) end)
-  return ElementList.fromtable(descs)
+  return nnquery.ElementList.fromtable(descs)
 end
 
 --[[
@@ -118,11 +117,11 @@ children and the structure being a DAG rather than a tree.
 function Element:dfs(func_visit)
   local visited_table = {}
   local function traverse(el)
-    for child in el:children() do
-      if not visited_table[el] then
-        traverse(func)
-        func_visit(el)
-        visited_table[el] = true
+    for child in el:children():iter() do
+      if not visited_table[child] then
+        traverse(child)
+        func_visit(child)
+        visited_table[child] = true
       end
     end
   end
@@ -130,5 +129,9 @@ function Element:dfs(func_visit)
 end
 
 -- TODO: get a queue and implement BFS
+
+function Element:__tostring()
+  return string.format('%s[val=%s]', tostring(self:class()), tostring(self:val()))
+end
 
 return Element

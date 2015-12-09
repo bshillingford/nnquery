@@ -194,7 +194,7 @@ The predicate will not longer be calle the first time it returns true.
 
 Predicate has the same form as in `:where()`.
 ]]
-function EL:before(pred)
+function EL:before(pred, incl)
   local true_yet = false
   return self:where(function(...)
     if not true_yet and pred(...) then
@@ -252,16 +252,15 @@ function EL:where(pred, no_table)
       local iter = self:iter()
       return function()
         local el
-        local found = false
-        -- fetch the next matching element, if any
-        repeat
+        -- fetch the next matching element, if any, and return if found, else nil
+        pos = pos + 1
+        el = iter()
+        while el do
+          if pred(el, pos) then
+            return el
+          end
           pos = pos + 1
           el = iter()
-          found = pred(el, pos)
-        until found
-        -- if none, returns nil (stop iteration)
-        if found then
-          return el
         end
       end
     end)
@@ -269,12 +268,12 @@ function EL:where(pred, no_table)
     -- Here, we don't construct on the fly, in case pred() is rarely or never true, in which
     -- case caching is a better idea.
     local results = {}
-    local i = 1
+    local pos = 1
     for e in self:iter() do
-      i = i + 1
-      if pred(f, i) then
+      if pred(f, pos) then
         table.insert(results, e)
       end
+      pos = pos + 1
     end
     return EL.fromtable(results)
   end
