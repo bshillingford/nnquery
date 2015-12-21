@@ -4,6 +4,9 @@ local nnquery = require 'nnquery'
 
 --[[
 Abstract class that adds manual parent tracking to `Element`.
+To be used by `nn.Module`'s, with extra functionality added for
+returning children. See also `ChildlessElement` for modules with
+no children.
 ]]
 local MPE, super = classic.class(..., nnquery.Element)
 

@@ -131,7 +131,7 @@ end
 -- TODO: get a queue and implement BFS
 
 function Element:__tostring()
-  return string.format('%s[val=%s]', tostring(self:class()), tostring(self:val()))
+  return string.format('%s[val=%s]', self:class():name(), tostring(self:val()))
 end
 
 return Element

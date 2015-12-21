@@ -4,7 +4,7 @@ local nn = require 'nn'
 
 local nnquery = require 'nnquery'
 
-local ContainerElement, super = classic.class(..., nnquery.ManualParentElement)
+local ContainerElement, super = classic.class(..., nnquery.ModuleElement)
 
 function ContainerElement:children()
   local wrappeds = self._ctx:wrapall(self._val.modules)

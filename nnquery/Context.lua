@@ -45,6 +45,9 @@ end
 --[[
 As specified by the registered handlers, wraps the given object in an 
 instance of `Element` (or subclass).
+
+TODO: instead of forcing only one to match, give an option to priorize using
+      an order.
 ]]
 function Context:wrap(val)
   local wrapped_reg

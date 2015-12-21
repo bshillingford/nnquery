@@ -7,12 +7,13 @@ M:class('Context')
 M:class('Element')
 M:class('ChildlessElement')
 M:class('ContainerElement')
-M:class('ManualParentElement')
+M:class('ModuleElement')
+M:class('NNGraphGModuleElement')
+M:class('NNGraphNodeElement')
 
 M:class('ElementList')
 
--- TODO: impl/test Element etc for nn.Container, then add querying
--- TODO: lightweight hierarchy (via classic) for exceptions, instead of string errors.
+-- TODO: maybe lightweight hierarchy (via classic) for exceptions, instead of string errors.
 
 return M
 

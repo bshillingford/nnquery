@@ -1,7 +1,6 @@
 package.path = package.path .. ';./?/init.lua'
 
 require 'nn'
-require 'env'
 nnq = require 'nnquery'
 
 ctx = nnq.Context()

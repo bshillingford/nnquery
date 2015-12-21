@@ -33,7 +33,7 @@ end
 Factory for constructing `ElementList`s from tables of `Element`s.
 ]]
 function EL.static.fromtable(elements)
-  assert(type(elements) == 'table')
+  assert(type(elements) == 'table', 'expected table')
 
   -- returns ElementList w/ iterator factory:
   return EL(function()
@@ -326,6 +326,16 @@ function EL:props_any(props)
     end
     return false
   end)
+end
+
+function EL:__tostring()
+  local strs = {}
+  for e in self:iter() do
+    table.insert(strs, tostring(e))
+  end
+  return string.format('%s{\n  %s\n}',
+                       self:class():name(),
+                       table.concat(strs, ',\n  '))
 end
 
 return EL
