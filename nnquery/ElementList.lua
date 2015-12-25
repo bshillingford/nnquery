@@ -27,6 +27,9 @@ Constructor meant to be called by an `Element` instance, not by the user.
 function EL:_init(new_elem_iter)
   assert(type(new_elem_iter) == 'function', 'expected iterator factory')
   self._newiter = new_elem_iter
+
+  -- FIXME: workaround: classic doesn't support __len metamethod
+  getmetatable(self).__len = self.count
 end
 
 --[[

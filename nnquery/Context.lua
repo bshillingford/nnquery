@@ -10,7 +10,13 @@ local nnquery = require 'nnquery'
 
 local Context = classic.class(...)
 
-function Context:_init()
+--[[
+single_match: if true, only allows one handler to match. 
+    Otherwise, the first matching handler is used.
+    Defaults to false.
+]]
+function Context:_init(single_match)
+  self.single_match = single_match or false
   self._reg = {}
 end
 
@@ -46,8 +52,7 @@ end
 As specified by the registered handlers, wraps the given object in an 
 instance of `Element` (or subclass).
 
-TODO: instead of forcing only one to match, give an option to priorize using
-      an order.
+Behaviour depends on value of `single_match` provided to ctor.
 ]]
 function Context:wrap(val)
   local wrapped_reg
@@ -62,6 +67,11 @@ function Context:wrap(val)
       wrapped_reg = reg
       -- first arg to ctor is ctx, second is the wrapee
       wrapped = reg.cls(self, val)
+      -- if we're only allowing a single matching handler, keep going
+      -- to check that no other handlers match
+      if not self.single_match then
+        break
+      end
     end
   end
   if not wrapped_reg then

@@ -118,10 +118,10 @@ function Element:dfs(func_visit)
   local visited_table = {}
   local function traverse(el)
     for child in el:children():iter() do
-      if not visited_table[child] then
-        traverse(child)
+      if not visited_table[child:val()] then
+        visited_table[child:val()] = true
         func_visit(child)
-        visited_table[child] = true
+        traverse(child)
       end
     end
   end
