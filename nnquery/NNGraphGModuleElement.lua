@@ -68,7 +68,26 @@ end
 Returns `ElementList` consisting of output nodes of module's **forward graph**.
 ]]
 function NNGGME:outputs()
-  error('not yet implemented')
+  local mod = self:val()
+  local leaves = mod.fg:leaves()
+  assert(#leaves == 1, "gmodule forward graph should have a single leaf")
+  local leaf = leaves[1]
+
+  -- Get node objects in order of output:
+  local outnodes = {}
+  for _, mi in ipairs(leaf.data.mapindex) do
+    table.insert(outnodes, mod.fg.nodes[mi.forwardNodeId])
+  end
+
+  -- Wrap in elements and create element list as usual
+  local inputs = self._ctx:wrapall(outnodes)
+  for _, input in ipairs(inputs) do
+    -- Add parent(s) for consistent parent behaviour (in input order)
+    for _, mi in ipairs(input:val().data.mapindex) do
+      input:_add_parent(self._ctx:wrap(mod.fg.nodes[mi.forwardNodeId]))
+    end
+  end
+  return nnquery.ElementList.fromtable(inputs)
 end
 
 function NNGGME.static.isGmodule(m)

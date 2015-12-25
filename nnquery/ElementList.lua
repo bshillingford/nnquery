@@ -39,7 +39,7 @@ function EL.static.fromtable(elements)
   assert(type(elements) == 'table', 'expected table')
 
   -- returns ElementList w/ iterator factory:
-  return EL(function()
+  local el = EL(function()
     local pos = 0
     return function()
       pos = pos + 1
@@ -47,6 +47,8 @@ function EL.static.fromtable(elements)
       return elements[pos]
     end
   end)
+  el._count = #elements  -- precomputed for efficiency
+  return el
 end
 
 --[[
@@ -73,7 +75,7 @@ The first element is at index 1, and the last is -1.
 ]]
 function EL:nth(n)
   if type(n) ~= 'number' or n == 0 or math.floor(n) ~= n then
-    error('expected positive or negative int as argument to :nth()')
+    error('expected positive or negative int as argument to :nth(), got: ' .. tostring(n))
   end
   -- Make the index a positive one
   if n < 0 then
@@ -89,7 +91,14 @@ function EL:nth(n)
     end
     i = i + 1
   end
-  error('n out of range')
+  error('n out of range: ' .. tostring(n))
+end
+
+function EL:__index(i)
+  -- So that nonexistent properties don't go into :nth()
+  if type(i) == 'number' then
+    return self:nth(i)
+  end
 end
 
 --[[
