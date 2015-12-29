@@ -73,11 +73,12 @@ Returns the `n`th `Element` of the sequence.
 If `n` is negative, counts backward from the end.
 The first element is at index 1, and the last is -1.
 ]]
-function EL:nth(n)
-  if type(n) ~= 'number' or n == 0 or math.floor(n) ~= n then
-    error('expected positive or negative int as argument to :nth(), got: ' .. tostring(n))
+function EL:nth(n_)
+  if type(n_) ~= 'number' or n_ == 0 or math.floor(n_) ~= n_ then
+    error('expected positive or negative int as argument to :nth(), got: ' .. tostring(n_))
   end
   -- Make the index a positive one
+  local n = n_
   if n < 0 then
     -- e.g. -1 + count + 1 = count
     n = n + self:count() + 1
@@ -91,7 +92,7 @@ function EL:nth(n)
     end
     i = i + 1
   end
-  error('n out of range: ' .. tostring(n))
+  error(string.format('n out of range: %d (computed: %d), count=%d', n_, n, self:count()))
 end
 
 function EL:__index(i)
@@ -106,6 +107,17 @@ First `Element`.
 ]]
 function EL:first()
   return self:nth(1)
+end
+
+--[[
+Like `:first()`, but ensures only one `Element` is in the list.
+If there is more than one, an error is thrown.
+]]
+function EL:only()
+  if self:count() ~= 1 then
+    error('expected 1 element, have ' .. tostring(self:count()))
+  end
+  return self:first()
 end
 
 --[[
@@ -189,7 +201,7 @@ function EL:after(pred, incl)
       end
     end
     return true_yet
-  end, true)  -- doesn't construct intermediate table
+  end)
 end
 
 --[[
@@ -212,13 +224,13 @@ function EL:before(pred, incl)
     if not true_yet and pred(...) then
       true_yet = true
       if incl then
-        return false
-      else
         return true
+      else
+        return false
       end
     end
     return not true_yet
-  end, true)  -- doesn't construct intermediate table
+  end)
 end
 
 --[[
@@ -226,6 +238,55 @@ Similar to `before`, except inclusive.
 ]]
 function EL:ibefore(pred)
   return self:before(pred, true)
+end
+
+--[[
+Returns true if the given predicate is true for all elements in this
+element list, false otherwise.
+
+Returns true for an empty list.
+
+Predicate takes the same two arguments as `:where()`: element, index.
+]]
+function EL:all(pred)
+  local b = true
+  local idx = 1
+  for el in self:iter() do
+    b = b and pred(el, idx)
+    idx = idx + 1
+  end
+  return b
+end
+
+--[[
+Returns true if the given predicate is true for ***any*** element in this
+element list. If it is not true for all, then returns false.
+
+Returns false for an empty list.
+
+Predicate takes the same two arguments as `:where()`: element, index.
+]]
+function EL:any(pred)
+  local b = false
+  local idx = 1
+  for el in self:iter() do
+    b = b or pred(el, idx)
+    idx = idx + 1
+  end
+  return b
+end
+
+--[[
+Applies a function to each element in the `ElementList`.
+
+Function takes the same two arguments as `:where()`: element, index.
+]]
+function EL:foreach(f)
+  local idx = 1
+  for el in self:iter() do
+    f(el, idx)
+    idx = idx + 1
+  end
 end
 
 --[[
@@ -248,7 +309,8 @@ Returns a new `ElementList`.
 
 If `no_table` is true, doesn't construct a table. This is ideal for when the result of
 the `:where()` will only be used once or chained. Used frequently to implement the
-other filters.
+other filters. Note: the predicate sequence might be called more than once for the 
+sequence.
 
 The function is passed two args: the `Element`, and its index into the `ElementList`.
 The index argument needn't be given for lua functions, which ignore extra args.
@@ -281,9 +343,9 @@ function EL:where(pred, no_table)
     -- case caching is a better idea.
     local results = {}
     local pos = 1
-    for e in self:iter() do
-      if pred(f, pos) then
-        table.insert(results, e)
+    for el in self:iter() do
+      if pred(el, pos) then
+        table.insert(results, el)
       end
       pos = pos + 1
     end

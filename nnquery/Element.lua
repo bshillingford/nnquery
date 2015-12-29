@@ -65,6 +65,38 @@ Pure virtual method; must be implemented by the concrete `Element`.
 Element:mustHave('parents')
 
 --[[
+Alias for `:parents():only()`.
+]]
+function Element:parent()
+  return self:parents():only()
+end
+Element:final('parent')
+
+--[[
+Alias for `:children():nth()`.
+]]
+function Element:nth_child(...)
+  return self:children():nth(...)
+end
+Element:final('nth_child')
+
+--[[
+Alias for `:children():first()`.
+]]
+function Element:first_child()
+  return self:children():first()
+end
+Element:final('first_child')
+
+--[[
+Alias for `:children():last()`.
+]]
+function Element:last_child()
+  return self:children():last()
+end
+Element:final('last_child')
+
+--[[
 Returns an `ElementList` for following siblings of this element.
 
 Raises an error if this element has multiple parents.
@@ -84,8 +116,9 @@ Element:final('following_siblings')
 
 --[[
 Returns an `ElementList` for preceding siblings of this element, where
-the first sibling is the one immediately preceding this element and subsequent
-siblings are further away.
+the first sibling is first child of the parent, and subsequent elements
+are progressively closer, where the last is the immediately preceding
+element.
 ]]
 function Element:preceding_siblings()
   local parents = self:parents():totable()
