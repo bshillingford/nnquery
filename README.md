@@ -35,27 +35,11 @@ local seq = nn.Sequential()
 
 local tanh = nnq(seq):children():first()
 ```
-In the code: `nnq(seq)` wraps `seq` into an `Element`; `:children()` returns an `ElementList` of two `Elements` for `seq`'s children; `:first()` returns the first `Element` in the `ElementList`.
+On the last line,
 
-## Details:
-Wrapping objects into elements and similar operations only make sense relative to a **context**, an instance of `nnquery.Context`, which contains a list of `Element` types and conditions on which to instantiate depending on what type is provided to it. Additionally, the context caches `Element`s, so that wrapping the same object twice returns the same instance of the `Element` subclass.
-`nnquery/init.lua` contains the construction of a default context (accessible as `nnquery.default`) that contains all the implemented `Element` types, similarly to this:
-```lua
-local ctx = nnq.Context()
-ctx:reg(nnq.NNGraphGModuleElement, nnq.NNGraphGModuleElement.isGmodule)
-ctx:reg(nnq.NNGraphNodeElement, nnq.NNGraphNodeElement.isNode)
-ctx:reg(nnq.ContainerElement, nnq.ContainerElement.isContainer) -- after since gModule IS_A Container
-ctx:default(nnq.ChildlessElement)
-```
-
-Note that there is no true "root" node, unlike an XML/HTML document; the root is simply the place where the query begins. Therefore, one cannot[*] search for the root's parents, even if the root module is contained in (for example) a container.
-
-[*] Usually. Unless an element's parents are pre-populated from a previous query.
-
-## Further Documentation
-Further documentation can be found in doc comment style before class definitions and method definitions in the code itself.
-
-***TODO: extract these into markdown format and put links here***
+ * `nnq(seq)` wraps `seq` into an `Element`;
+ * `:children()` returns an `ElementList` of two `Elements` for `seq`'s children;
+ * `:first()` returns the first `Element` in the `ElementList`.
 
 # Realistic example with an LSTM:
 This is an example of using various functions in `Element` and `ElementList`:
@@ -147,6 +131,26 @@ local input_sum = forget_gate:parent() -- This is an alias for :parents():only()
 assert(torch.isTypeOf(input_sum:val().data.module, nn.CAddTable))
 assert(torch.isTypeOf(input_sum:module(), nn.CAddTable)) -- alias for :val().data.module
 ```
+
+# Further details:
+Wrapping objects into elements and similar operations only make sense relative to a **context**, an instance of `nnquery.Context`, which contains a list of `Element` types and conditions on which to instantiate depending on what type is provided to it. Additionally, the context caches `Element`s, so that wrapping the same object twice returns the same instance of the `Element` subclass.
+`nnquery/init.lua` contains the construction of a default context (accessible as `nnquery.default`) that contains all the implemented `Element` types, similarly to this:
+```lua
+local ctx = nnq.Context()
+ctx:reg(nnq.NNGraphGModuleElement, nnq.NNGraphGModuleElement.isGmodule)
+ctx:reg(nnq.NNGraphNodeElement, nnq.NNGraphNodeElement.isNode)
+ctx:reg(nnq.ContainerElement, nnq.ContainerElement.isContainer) -- after since gModule IS_A Container
+ctx:default(nnq.ChildlessElement)
+```
+
+Note that there is no true "root" node, unlike an XML/HTML document; the root is simply the place where the query begins. Therefore, one cannot[*] search for the root's parents, even if the root module is contained in (for example) a container.
+
+[*] Usually. Unless an element's parents are pre-populated from a previous query.
+
+# Documentation
+Further documentation can be found in doc comment style before class definitions and method definitions in the code itself.
+
+***TODO: extract these into markdown format and put links here***
 
 # Developing
 ## Extending
