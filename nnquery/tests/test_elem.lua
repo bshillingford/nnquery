@@ -4,10 +4,11 @@ Tests the following classes (not all in isolation, TODO: write real unit tests w
  * ModuleElement (abstract base class)
  * ContainerElement
  * ChildlessElement
+Also tests some basic ElementList functionality.
 ]]
 
 local totem = require 'totem'
-local nn = require 'nn'
+require 'nn'
 
 -- path hack for running in src dir without nnquery installed:
 package.path = package.path .. ';../../?/init.lua;../?/init.lua'
@@ -29,6 +30,18 @@ function tests.Val()
   local ctx = newctx()
   local mod = nn.Identity()
   tester:asserteq(ctx(mod):val(), mod, 'wrong val')
+end
+
+function tests.NoSiblings()
+  local ctx = newctx()
+  local idn = nn.Tanh()
+  local mod = nn.Container():add(idn)
+
+  -- make sure we grab the right one:
+  tester:asserteq(ctx(mod):children():only():val(), idn, 'wrong val?')
+  -- should have no siblings
+  tester:asserteq(ctx(mod):children():first():following_siblings():count(), 0, 'no siblings')
+  tester:asserteq(ctx(mod):children():first():preceding_siblings():count(), 0, 'no siblings')
 end
 
 function tests.FollowingSiblingsPrecedingSiblings()

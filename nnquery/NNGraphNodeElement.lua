@@ -9,11 +9,36 @@ local NE, super = classic.class(..., nnquery.Element)
 
 function NE:_init(...)
   super._init(self, ...)
-  self._parents = {}
 end
 
-function NE:_add_parent(e)
-  table.insert(self._parents, e)
+function NE:_set_gmod(gmod, gmod_el)
+  assert(not self._gmod and not self._gmod_el)
+  self._gmod = gmod
+  self._gmod_el = gmod_el
+end
+
+function NE:_init_parents()
+  assert(self._gmod and self._gmod_el, "internal error: don't wrap a gmodule node directly")
+
+  -- Find all the parents:
+  self._parents = {}
+  for i, mi in ipairs(self:val().data.mapindex) do
+    self._parents[i] = self._gmod_el:_wrap(self._gmod.fg.nodes[mi.forwardNodeId])
+  end
+end
+
+--[[
+Alias for `:val().data.module`.
+]]
+function NE:module()
+  return self:val().data.module
+end
+
+--[[
+Alias for `:val().data.annotations.name`.
+]]
+function NE:name()
+  return self:val().data.annotations.name
 end
 
 --[[
@@ -27,10 +52,10 @@ end
 Returns an `ElementList` for children nngraph nodes of this element.
 ]]
 function NE:children()
-  local childelems = self._ctx:wrapall(self:val().children)
+  local childelems = self._gmod_el:_wrapall(self:val().children)
   for _, child in ipairs(childelems) do
-    assert(child:classIs(NE))
-    child:_add_parent(self)
+    -- at this point, should have all parents set by the ctor, incl ourself
+    assert(child:classIs(NE), 'All wrappers for nodes should be NodeElements')
   end
   return nnquery.ElementList.fromtable(childelems)
 end

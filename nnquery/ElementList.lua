@@ -380,6 +380,13 @@ function EL:props(props)
 end
 
 --[[
+Alias for `props`.
+]]
+function EL:attr(...)
+  return self:props(...)
+end
+
+--[[
 Same as `:props()` except ***any*** property must match rather than all.
 ]]
 function EL:props_any(props)
@@ -401,6 +408,14 @@ function EL:props_any(props)
     return false
   end)
 end
+
+--[[
+Alias for `props_any`.
+]]
+function EL:attr_any(...)
+  return self:props_any(...)
+end
+
 
 function EL:__tostring()
   local strs = {}

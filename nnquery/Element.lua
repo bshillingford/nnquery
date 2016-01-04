@@ -143,14 +143,27 @@ function Element:descendants()
 end
 
 --[[
+Returns an `ElementList` of all ancestors.
+]]
+function Element:ancestors()
+  local descs = {}
+  self:dfs(function(el) table.insert(descs, el) end, 'parents')
+  return nnquery.ElementList.fromtable(descs)
+end
+
+--[[
 Recurses down the DAG below this `Element` in DFS order, calling the callback 
 at each `Element`. Note that DFS order is not unique, both due to ordering of
 children and the structure being a DAG rather than a tree.
+
+If `children_func_name` is set to `parents`, performs a DFS with the graph's
+edges flipped. Defaults to `children`, i.e. a normal DFS.
 ]]
-function Element:dfs(func_visit)
+function Element:dfs(func_visit, children_func_name)
+  children_func_name = children_func_name or 'children'
   local visited_table = {}
   local function traverse(el)
-    for child in el:children():iter() do
+    for child in el[children_func_name](el):iter() do
       if not visited_table[child:val()] then
         visited_table[child:val()] = true
         func_visit(child)
