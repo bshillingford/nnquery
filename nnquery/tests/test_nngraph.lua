@@ -3,6 +3,8 @@ Tests the nngraph classes, also needs ChildlessElement:
  * NNGraphNodeElement
  * NNGraphGModuleElement
  * ChildlessElement
+
+NOTE: very incomplete.
 ]]
 
 local totem = require 'totem'

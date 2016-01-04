@@ -27,7 +27,6 @@ M.default = ctx
 local mt = {}
 for k,v in pairs(getmetatable(M)) do mt[k] = v end
 setmetatable(M, mt)
-
 mt.__call = function(M, ...) return M.default(...) end
 
 return M
