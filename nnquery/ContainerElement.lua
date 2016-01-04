@@ -9,7 +9,7 @@ local ContainerElement, super = classic.class(..., nnquery.ModuleElement)
 function ContainerElement:children()
   local wrappeds = self._ctx:wrapall(self._val.modules)
   for _, wrapped in ipairs(wrappeds) do
-    wrapped:add_parent(self)
+    wrapped:_set_parents({self})
   end
   return nnquery.ElementList.fromtable(wrappeds)
 end

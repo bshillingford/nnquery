@@ -24,13 +24,10 @@ function MPE:parents()
 end
 
 --[[
-Adds a parent, intended to be used by `ContainerElement` and the like.
+Sets parent, intended to be used by `ContainerElement` only.
 ]]
-function MPE:add_parent(elem)
-  if not elem:class():isSubclassOf(nnquery.Element) then
-    error('added parent must be (subclass of) Element')
-  end
-  table.insert(self._parents, elem)
+function MPE:_set_parents(parents)
+  self._parents = parents
 end
 
 return MPE

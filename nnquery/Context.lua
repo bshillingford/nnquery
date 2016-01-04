@@ -2,6 +2,16 @@
 Represents a query execution context, which keeps track of a registry of 
 `Element` types and provides a mechanism for constructing an `Element`
 given the registry.
+
+Caches `Element` instances for wrapped values, guaranteeing that two calls
+to `:wrap()` in the same context always return the same `Element`. Note that
+this means a reference will be retained and seemingly deleted objects
+will not be freed until the cache is clear. In that case, call `:clear()`.
+
+Note that cacheing does not affect mutating children of a value, at least
+in the case of `ContainerElement`, which builds up children lists on the 
+fly every time it is called. For `nngraph` `Element`s, these are not (easily)
+mutable, so that implementation caches its nodes and wrapped nodes.
 ]]
 
 local classic = require 'classic'
@@ -18,6 +28,15 @@ single_match: if true, only allows one handler to match.
 function Context:_init(single_match)
   self.single_match = single_match or false
   self._reg = {}
+  -- Cache table mapping vals to Elements, guaranteeing only one Element exists per val
+  self._wrapcache = {}
+end
+
+--[[
+Clears `Element` cache.
+]]
+function Context:clear()
+  self._wrapcache = {}
 end
 
 --[[
@@ -55,6 +74,10 @@ instance of `Element` (or subclass).
 Behaviour depends on value of `single_match` provided to ctor.
 ]]
 function Context:wrap(val)
+  if self._wrapcache[val] then
+    return self._wrapcache[val]
+  end
+
   local wrapped_reg
   local wrapped
   for _, reg in ipairs(self._reg) do
@@ -81,6 +104,7 @@ function Context:wrap(val)
       error('No handlers matched, and no default class provided')
     end
   end
+  self._wrapcache[val] = wrapped
   return wrapped
 end
 
