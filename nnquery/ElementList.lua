@@ -1,4 +1,5 @@
 local classic = require 'classic'
+local nnquery = require 'nnquery'
 
 --[[
 Stores sequences of elements as returned by querying operations, and provides various filtering
@@ -241,52 +242,101 @@ function EL:ibefore(pred)
 end
 
 --[[
-Returns true if the given predicate is true for all elements in this
-element list, false otherwise.
-
-Returns true for an empty list.
-
-Predicate takes the same two arguments as `:where()`: element, index.
-]]
-function EL:all(pred)
-  local b = true
-  local idx = 1
-  for el in self:iter() do
-    b = b and pred(el, idx)
-    idx = idx + 1
-  end
-  return b
-end
-
---[[
-Returns true if the given predicate is true for ***any*** element in this
-element list. If it is not true for all, then returns false.
-
-Returns false for an empty list.
-
-Predicate takes the same two arguments as `:where()`: element, index.
-]]
-function EL:any(pred)
-  local b = false
-  local idx = 1
-  for el in self:iter() do
-    b = b or pred(el, idx)
-    idx = idx + 1
-  end
-  return b
-end
-
---[[
-Applies a function to each element in the `ElementList`.
+Transforms each element of the `ElementList` by the given function
+and returns a new `ElementList`. (Thus each mapped item must be an
+`Element`.)
 
 Function takes the same two arguments as `:where()`: element, index.
 ]]
-function EL:foreach(f)
-  local idx = 1
-  for el in self:iter() do
-    f(el, idx)
-    idx = idx + 1
+function EL:map(f)
+  -- returns ElementList with an iter factory that depends on this EL's iter:
+  local mapped_el = EL(function()
+    local pos = 0
+    local it = self:iter()
+    return function()
+      pos = pos + 1
+      local e = it()
+      -- reached end:
+      if e == nil then
+        return nil
+      end
+      -- transform and ensure it's an Element
+      local mapped_e = f(e, pos)
+      if not mapped_e or not mapped_e:class():isSubclassOf(nnquery.Element) then
+        error([[Mapped items must be instances of Element. You may be looking 
+            for :rawmap(), which returns a table rather than an ElementList, or
+            :flatmap(), where mapped values are ElementLists that :flatmap() merges.]])
+      end
+      return mapped_e
+    end
+  end)
+  mapped_el._count = self._count -- copied if already computed
+  return mapped_el
+end
+
+--[[
+Performs a flattened map: each `Element` in this `ElementList` is passed 
+through a function that must return an `ElementList`. These are then
+concatenated to produce a new `ElementList`, but with duplicates removed.
+
+Function takes the same two arguments as `:where()`: element, index.
+]]
+function EL:flatmap(f)
+  -- returns ElementList with an iter factory that depends on this EL's iter:
+  local flatmapped_el = EL(function()
+    local pos = 0           -- index into the EL that flatmap was called on
+    local it = self:iter()  -- iter into the EL that flatmap was called on
+    local sub_it            -- current iter returned from f, or nil if we need to get a new one
+    local seen = {}         -- for checking for duplicates: maps element.val to true if seen
+    return function()
+      pos = pos + 1
+      while true do         -- we break out of this loop by returning
+        local e = it()      -- element from EL that flatmap was called on
+        if e == nil then    -- all done
+          return nil
+        end
+        if not sub_it then
+          local sub_el = f(e)  -- mapped item, should be ElementList
+          if not sub_el or not sub_el:class():isSubclassOf(EL) then
+            error("Mapped items must be ElementLists. Or perhaps you meant :map() or :rawmap()?")
+          end
+          sub_it = sub_el:iter()
+        end
+        -- ensure it's not a duplicate first; if so, grab another
+        local sub_e = sub_it()
+        if sub_e ~= nil then
+          assert(sub_e:class():isSubclassOf(nnquery.Element), 'should be Element')
+          if not seen[sub_e:val()] then
+            seen[sub_e:val()] = true
+            return sub_e
+          end
+          -- if we've reached here, it's been seen, so try again next iteration of while loop
+        else
+          -- sub_it == nil --> ran out of sub_it, grab another next iteration if available
+          sub_it = nil
+        end
+      end
+      return sub_e
+    end
+  end)
+  return flatmapped_el
+end
+
+--[[
+Transforms each element of the `ElementList` by the given function
+and returns the mapped results a table. Hence, the mapped items
+can be of any type.
+
+Function takes the same two arguments as `:where()`: element, index.
+]]
+function EL:rawmap(f)
+  local results = {}
+  local pos = 0
+  for e in self:iter() do
+    pos = pos + 1
+    results[pos] = f(e, pos)
   end
+  return results
 end
 
 --[[
@@ -300,6 +350,13 @@ function EL:totable()
     table.insert(result, e)
   end
   return result
+end
+
+--[[
+Alias for `:totable()`, called `val` for consistency with `Element`.
+]]
+function EL:val()
+  return self:totable()
 end
 
 --[[

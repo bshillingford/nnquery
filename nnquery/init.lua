@@ -2,6 +2,9 @@ local classic = require 'classic'
 
 local M = classic.module(...)
 
+M:submodule('tools')
+
+-- The three core (base) classes: Context, Element, ElementList
 M:class('Context')
 
 M:class('Element')
