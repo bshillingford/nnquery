@@ -16,7 +16,7 @@ description = {
 dependencies = {
   'lua >= 5.1',
   'torch',
-  -- classic also required: https://github.com/deepmind/classic
+  'classic'
 }
 
 build = {

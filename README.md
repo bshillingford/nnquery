@@ -7,10 +7,6 @@ The API is loosely inspired by a mix of XPath, CSS queries, and .NET's LINQ.
 See below for a simple example, and a more complete example of extracting things from an LSTM.
 
 ## Installation
-Install `classic` (a class library from DeepMind) first:
-```
-luarocks install https://raw.githubusercontent.com/deepmind/classic/master/rocks/classic-scm-1.rockspec
-```
 Install `nnquery`:
 ```
 luarocks install https://raw.githubusercontent.com/bshillingford/nnquery/master/rocks/nnquery-scm-1.rockspec
